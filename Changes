@@ -1,5 +1,18 @@
 Revision history for Perl extension AlignmentSet.
 
+- added adaptToBilCorpus and orderAlSetAsBilCorpus functions in AlignmentSet.pm
+- added the TALP format, which is the new default
+- added compatibility for GIZA output format
+- added splice and regexpReplace functions in Alignment.pm
+- modified forceGroupConsistency sub of Alignment.pm to consider the difference between P and S links
+- modified forceGroupConsistency sub of Alignment.pm to add the option of contiguous groups
+- added in Alignment.pm: 
+	* sub manyToMany2joined (introduces underscore between links of many-to-many groups in source to target alignment ; WARNING: THIS SUB FOR NOW ONLY CHANGES WORDS FILES, NOT THE LINKS FILE)
+	* sub joined2ManyToMany (recreates links of words linked by underscore and removes underscores)
+- corrected bug in forceGroupConsistency sub of Alignment.pm
+- corrected bug in createDirStructure (if relative output files were passed without "/" in the path, files were created as a directory
+- added sourceSentence and targetSentence functions (print words without the NULL word)
+- Corrected loadFromGiza : depending on the space after the last }) in the links string, if the last word had no link, it was not included as word of the sentence
 
 *************************************************************
 *** NEW FEATURES of version 1.00                          ***

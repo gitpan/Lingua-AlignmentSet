@@ -1,5 +1,5 @@
-AlignmentSet version 1.00
-=========================
+AlignmentSet version 1.1
+========================
 
     This module is a Tools Library to manage an Alignment Set, i.e. a set of sentences aligned at the word (or phrase) level. It provides methods to display the links, to apply a function to each alignment of the set, to evaluate the alignments against a reference, and more. One of the objectives of the module is to allow the user to perform all these operations without bothering with the particular physical format of the Alignment Set. Anyway it also provides format conversion methods.
 
@@ -8,7 +8,6 @@ PREREQUISITES
 - Perl 5.005 (or a more recent version)
 - The following CPAN modules and libraries (available from www.cpan.org):
    * Pod::Usage (included in the Perl library, in the recent Perl versions) 
-   * Algorithm::MinMax
 
 INSTALLATION
 
@@ -30,15 +29,13 @@ will specify '/your/lib/path' as the installation directory for the modules
 
 INSTRUCTIONS FOR USE
 
-See the detailed documentation in docs/reference.pdf
+See the detailed documentation in docs/reference.pdf (out of date:  Read the ./bin/*.pl manuals instead, with -man option).
 
-For a prompt or occasional task, you can use the command-line utilities in the tools/ directory.
-
-Otherwise, the best may be to include the library calls in a perl script. Look at code examples in the tools/sampleCode.pl program.
+You may use the command-line utilities in the bin/ directory or include directly the library calls in a perl script. Look at code examples in the bin/sampleCode.pl program (out of date: instead, look at the examples in the ./bin/*.pl manuals with -man option).
 
 COPYRIGHT AND LICENCE
 
-Copyright (C) 2004 Patrik Lambert
+Copyright (C) 2004-2005 Patrik Lambert
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

@@ -26,7 +26,7 @@
 use strict;
 use Getopt::Long;
 use Pod::Usage;
-use Lingua::AlignmentSet;
+use Lingua::AlignmentSet 1.1;
 #Debug:
 use Dumpvalue;
 use vars qw($dumper);
@@ -40,12 +40,12 @@ my $TINY = 1 - $INFINITY / ($INFINITY + 1);
 #PARSING COMMAND-LINE ARGUMENTS
 my %opts=();
 # optional arguments defaults
-$opts{i_format}="NAACL";
-$opts{o_format}="NAACL";
+$opts{i_format}="TALP";
+$opts{o_format}="TALP";
 $opts{range}="1-";
 $opts{alignMode}="as-is";
 # parse command line
-GetOptions(\%opts,'man','help|?','alignmentSub|sub=s@','i_sourceToTarget|i_st=s','i_source|i_s=s','i_target|i_t=s','i_targetToSource|i_ts=s','i_format=s','o_sourceToTarget|o_st=s','o_targetToSource|o_ts=s','o_source|o_s=s','o_target|o_t=s','o_format=s','range=s','alignMode=s') or pod2usage(0);
+GetOptions(\%opts,'man','help|?','alignmentSub|sub=s@','i_sourceToTarget|i_st|ist=s','i_source|i_s|is=s','i_target|i_t|it=s','i_targetToSource|i_ts|its=s','i_format|if=s','o_sourceToTarget|o_st|ost=s','o_targetToSource|o_ts|ots=s','o_source|o_s|os=s','o_target|o_t|ot=s','o_format|of=s','range=s','alignMode=s','stlex=s','tslex=s') or pod2usage(0);
 # check no required arg missing
 if ($opts{man}){
     pod2usage(-verbose=>2);
@@ -54,6 +54,7 @@ if ($opts{man}){
 }elsif( !(exists($opts{"i_sourceToTarget"}) && exists($opts{"o_sourceToTarget"}) && exists($opts{"alignmentSub"})) ){   #required arguments
     pod2usage(-msg=>"Required arguments missing",-verbose=>0);
 }
+
 #END PARSING COMMAND-LINE ARGUMENTS
 
 #load input Alignment Set
@@ -78,7 +79,37 @@ if (exists($opts{"o_source"})){
 if (exists($opts{"o_target"})){
 	$location->{"target"}=$opts{"o_target"};	
 }
+
 #call library function
+if (ref($opts{alignmentSub}) eq 'ARRAY'){
+    if ($opts{alignmentSub}[0] eq "Lingua::Alignment::forceGroupConsistency" && $opts{alignmentSub}[1] eq "contiguous" && @{$opts{alignmentSub}}>2){
+	# in this case we pass the ibm1 bilingual diccionary hash to help separate no-contiguous groups
+	my $ibm1File=$opts{alignmentSub}[2];
+	open(IBM,"<$ibm1File") or die "file ($ibm1File) opening error:$!";;
+	my %ibm1t_s;
+	while (<IBM>){
+	    chomp;
+	    my ($src, $trg, $prob)= split/ /;
+	    my $srctrg="$src ||| $trg";
+	    $ibm1t_s{$srctrg}=$prob;
+	}
+	$opts{alignmentSub}[2] = \%ibm1t_s;
+	
+	#trg->src lexicon
+	if (@{$opts{alignmentSub}}>3){
+	    $ibm1File=$opts{alignmentSub}[3];
+	    open(IBM,"<$ibm1File") or die "file ($ibm1File) opening error:$!";;
+	    my %ibm1s_t;
+	    while (<IBM>){
+		chomp;
+		my ($src, $trg, $prob)= split/ /;
+		my $srctrg="$src ||| $trg";
+		$ibm1s_t{$srctrg}=$prob;
+	    }
+	    $opts{alignmentSub}[3] = \%ibm1s_t;
+	}
+    }
+}
 $input->processAlignment($opts{alignmentSub},$location,$opts{o_format},$opts{alignMode});
 
 1;
@@ -87,54 +118,55 @@ __END__
 
 =head1 NAME
 
-processAlignment_alSet.pl - apply a function to each alignment of the Alignment Set
+processAlignment_alSet-version.pl - apply a function to each alignment of the Alignment Set
 
 =head1 SYNOPSIS
 
-perl processAlignment_alSet.pl [options] required_arguments
+perl processAlignment_alSet-version.pl [options] required_arguments
 
 Required arguments:
 
-	--i_st, --i_sourceToTarget FILENAME    Input source-to-target links file
-	--i_format BLINKER|GIZA|NAACL    Input file(s) format (required if not NAACL)
-	--o_st, --o_sourceToTarget FILENAME    Output source-to-target links file
-	--o_format BLINKER|GIZA|NAACL    Output file(s) format (required if not NAACL)
-	--sub, --alignmentSub SUBROUTINE    Subroutine name (package::subroutine)
-	  (such as Lingua::Alignment::forceGroupConsistency, swapSourceTarget, intersect, getUnion)
-	  If the subroutine needs arguments: --sub SUBROUTINE --sub ARG_1 --sub ARG_2 etc.
-	  
+    -ist FILENAME    Input source-to-target links file
+    -if BLINKER|GIZA|NAACL    Input file(s) format (required if not TALP)
+    -ost FILENAME    Output source-to-target links file
+    -of BLINKER|GIZA|NAACL    Output file(s) format (required if not TALP)
+    -sub SUBROUTINE    Subroutine name (package::subroutine)
+    (such as Lingua::Alignment::forceGroupConsistency, swapSourceTarget, intersect, getUnion)
+    If the subroutine needs arguments: -sub SUBROUTINE -sub ARG_1 -sub ARG_2 etc.
+    Look manual for more subroutines (-man option)
+  
 Options:
 
-	--i_s, --i_source FILENAME    Input source words file
-	--i_t, --i_target FILENAME    Input target words file
-	--i_ts, --i_targetToSource FILENAME Input target-to-source links file
-	--o_s, --o_source FILENAME    Output source words file
-	--o_t, --o_target FILENAME    Output target words file
-	--o_ts, --o_targetToSource FILENAME Output target-to-source links file
-	--range BEGIN-END    Input Alignment Set range
-	--alignMode as-is|null-align|no-null-align    Alignment mode
-	--help|?    Prints the help and exits
-	--man    Prints the manual and exits
+	-is FILENAME    Input source words file
+	-it FILENAME    Input target words file
+	-its FILENAME Input target-to-source links file
+	-os FILENAME    Output source words file
+	-ot FILENAME    Output target words file
+	-ots FILENAME Output target-to-source links file
+	-range BEGIN-END    Input Alignment Set range
+	-alignMode as-is|null-align|no-null-align    Alignment mode
+	-help|?    Prints the help and exits
+	-man    Prints the manual and exits
 
 =head1 ARGUMENTS
 
 =over 8
 
-=item B<--i_st,--i_sourceToTarget FILENAME>
+=item B<--ist,--i_st,--i_sourceToTarget FILENAME>
 
 Input source-to-target (i.e. links) file name (or directory, in case of BLINKER format)
 
-=item B<--i_format BLINKER|GIZA|NAACL>
+=item B<--if,--i_format BLINKER|GIZA|NAACL>
 
-Input Alignment Set format (required if different from default, NAACL).
+Input Alignment Set format (required if different from default, TALP).
 
-=item B<--o_st,--o_sourceToTarget FILENAME>
+=item B<--ost,--o_st,--o_sourceToTarget FILENAME>
 
 Output (new format) source-to-target (i.e. links) file name (or directory, in case of BLINKER format)
 
-=item B<--o_format BLINKER|GIZA|NAACL>
+=item B<--of,--o_format BLINKER|GIZA|NAACL>
 
-Output (new) Alignment Set format (required if different from default, NAACL)
+Output (new) Alignment Set format (required if different from default, TALP)
 
 =item B<--sub,--alignmentSub SUBROUTINE --sub,--alignmentSub ARG_1 etc.>
 
@@ -156,10 +188,44 @@ Prohibits situations of the type {if linked(e,f) and linked(e',f) and linked(e',
 
 Swaps source and target in the alignments: a link (6 3) becomes (3 6)
 
-=item <Lingua::Alignment::eliminatedWord> 
+=item <Lingua::Alignment::regexpReplace> 
 
-Eliminate a word (defined by a regular expression) from a side of the corpus and updates the link
-accordingly. There are 2 arguments: the regular expression and the side (source or target) (see the man examples)
+Substitutes, in a side of the corpus, a string (defined by a regular expression) by another and updates the links
+accordingly. There are 3 arguments: the regular expressions (pattern and replacement) and the side (source or target) (see the man examples). Notes:
+
+=over 
+
+=item 
+
+In case of deleting various words, all added words are linked to all positions to which deleted words were linked. $al->{sourceLinks} information can be lost for replaced words.
+
+=item 
+
+The regexp is applied to the side of the corpus, and the smallest set of additions and deletions necessary to turn the original word sequence into the modified one is computed using algorithm::diff. In practice, this set is not always minimal, and in these cases various words are replaced by various so links may be changed. To avoid this problem use C<replaceWords> subroutine.
+
+=item 
+
+Is more eficient in "source" side than in "target" side.
+
+=back
+
+=item <Lingua::Alignment::replaceWords> 
+
+Substitutes, in a side of the corpus, a string (of words separated by a white space) by another and updates the links
+accordingly. There are 3 arguments: the string of words to be replaced, the string of replacement words and the side (source or target) (see the man examples). Notes:
+
+=over 
+
+=item 
+
+In case of deleting various words, all added words are linked to all positions to which deleted words were linked. $al->{sourceLinks} information can be lost for replaced words.
+
+=item 
+
+Is more eficient in "source" side than in "target" side.
+
+    
+=back
 
 =item <Lingua::Alignment::intersect> 
 
@@ -171,17 +237,19 @@ Takes the union between source-to-target and target-to-source alignments
 
 =item etc. See the AlignmentSet.pm module documentation for more functions
 
+=back
+
 =head1 OPTIONS
 
-=item B<--i_s,--i_source FILENAME>
+=item B<--is,--i_s,--i_source FILENAME>
 
 Input source (words) file name.  Not applicable in GIZA Format.
 
-=item B<--i_t,--i_target FILENAME>
+=item B<--it,--i_t,--i_target FILENAME>
 
 Input target (words) file name. Not applicable in GIZA Format.
 
-=item B<--i_ts,--i_targetToSource FILENAME>
+=item B<--its,--i_ts,--i_targetToSource FILENAME>
 
 Input target-to-source (i.e. links) file name (or directory, in case of BLINKER format)
 
@@ -189,15 +257,15 @@ Input target-to-source (i.e. links) file name (or directory, in case of BLINKER 
 
 Range of the input source-to-target file (BEGIN and END are the sentence pair numbers)
 
-=item B<--o_s,--o_source FILENAME>
+=item B<--os,--o_s,--o_source FILENAME>
 
 Output (new format) source (words) file name. Not applicable in GIZA Format.
 
-=item B<--o_t,--o_target FILENAME>
+=item B<--ot,--o_t,--o_target FILENAME>
 
 Output (new format) target (words) file name. Not applicable in GIZA Format.
 
-=item B<--o_ts,--o_targetToSource FILENAME>
+=item B<--ots,--o_ts,--o_targetToSource FILENAME>
 
 Output (new format) target-to-source (i.e. links) file name (or directory, in case of BLINKER format)
 
@@ -213,6 +281,8 @@ Prints a help message and exits.
 
 Prints a help message and exits.
 
+=back
+
 =head1 DESCRIPTION
 
 Allows to process the AlignmentSet applying a function to the alignment of each sentence pair of the set. The Alignment.pm module contains such functions.
@@ -222,11 +292,11 @@ The command-line utility has been made for convenience. For full details, see th
 
 Swapping source and target in source-to-target links file:
 
-perl processAlignment_alSet.pl --i_st test-giza.eng2spa.naacl --o_st test-giza.swapped --sub Lingua::Alignment::swapSourceTarget
+perl processAlignment_alSet-version.pl -ist test-giza.eng2spa.naacl -ost test-giza.swapped -sub Lingua::Alignment::swapSourceTarget
 
 Remove '?' and '.' from the source side of the corpus:
 
-perl processAlignment_alSet.pl -i_st data/spanish-english.naacl -i_s data/spanish.naacl -o_st data/spanish-english-without.naacl -o_s data/spanish-without.naacl -sub Lingua::Alignment::eliminateWord -sub '\?|\.' -sub source
+perl processAlignment_alSet-version.pl -ist data/spanish-english.naacl -is data/spanish.naacl -ost data/spanish-english-without.naacl -os data/spanish-without.naacl -sub Lingua::Alignment::regexpReplace -sub '\?|\.' -sub '' -sub source
 
 =head1 AUTHOR
 

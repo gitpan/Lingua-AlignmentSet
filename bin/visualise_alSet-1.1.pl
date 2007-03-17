@@ -1,7 +1,7 @@
-#! /usr/local/bin/perl
+#! /usr/bin/perl
 
 ########################################################################
-# Author:  Patrik Lambert (lambert@talp.ucp.es)
+# Author:  Patrik Lambert (lambert@gps.tsc.upc.edu)
 # Description: Displays the aligned sentence pairs as a links enumeration or matrix
 #
 #-----------------------------------------------------------------------
@@ -39,20 +39,22 @@ my $TINY = 1 - $INFINITY / ($INFINITY + 1);
 #PARSING COMMAND-LINE ARGUMENTS
 my %opts=();
 # optional arguments defaults
-$opts{i_format}="NAACL";
+$opts{i_format}="TALP";
 $opts{range}="1-";
 $opts{alignMode}="as-is";
-$opts{mark}="cross";
+$opts{mark}='$\blacksquare$';
 $opts{maxRows}=53;
 $opts{maxCols}=35;
+$opts{representation}="matrix";
+$opts{format}="latex";
 # parse command line
-GetOptions(\%opts,'man','help|?','i_sourceToTarget|i_st=s','i_targetToSource|i_ts=s','i_source|i_s=s','i_target|i_t=s','i_format=s','format=s','representation|rep=s','range=s','alignMode=s','mark=s','maxRows=i','maxCols=i') or pod2usage(0);
+GetOptions(\%opts,'man','help|?','i_sourceToTarget|i_st|ist=s','i_targetToSource|i_ts|its=s','i_source|i_s|is=s','i_target|i_t|it=s','i_format|if=s','format=s','representation|rep=s','range=s','alignMode=s','mark=s','maxRows=i','maxCols=i') or pod2usage(0);
 # check no required arg missing
 if ($opts{man}){
     pod2usage(-verbose=>2);
 }elsif ($opts{"help"}){
     pod2usage(0);
-}elsif( !(exists($opts{"i_sourceToTarget"}) && exists($opts{"representation"}) && exists($opts{"format"})) ){   #required arguments
+}elsif( !(exists($opts{"i_sourceToTarget"})) ){   #required arguments
     pod2usage(-msg=>"Required arguments missing",-verbose=>0);
 }
 #END PARSING COMMAND-LINE ARGUMENTS
@@ -77,51 +79,53 @@ __END__
 
 =head1 NAME
 
-visualise_alSet.pl - Displays the aligned sentence pairs as a links enumeration or matrix
+visualise_alSet-version.pl - Displays the aligned sentence pairs as a links enumeration or matrix
 
 =head1 SYNOPSIS
 
-perl visualise_alSet.pl [options] required_arguments
+perl visualise_alSet-version.pl [options] required_arguments
 
 Required arguments:
 
-	--i_st, --i_sourceToTarget FILENAME    Input source-to-target links file
-	--i_s, --i_source FILENAME    Input source words file (not applicable in GIZA format)
-	--i_t, --i_target FILENAME    Input target words file (not applicable in GIZA format)
-	--i_format BLINKER|GIZA|NAACL    Input file(s) format (required if not NAACL)
-	--rep, --representation enumLinks|matrix|drawLines    Type of visual representation
-	--format text|latex    Format of the output
+	-ist FILENAME    Input source-to-target links file
+	-is FILENAME    Input source words file (not applicable in GIZA format)
+	-it FILENAME    Input target words file (not applicable in GIZA format)
+	-if BLINKER|GIZA|NAACL    Input file(s) format (required if not TALP)
 
 Options:
 
-	--i_ts, --i_targetToSource FILENAME Input target-to-source links file
-	--range BEGIN-END    Input Alignment Set range
-	--alignMode as-is|null-align|no-null-align    Alignment mode
-	--mark STRING    How a link is marked in the matrix representation
-	--maxRows INTEGER Maximum number of rows allowed in the matrix
-	--maxCols INTEGER Maximum number of columns allowed in the matrix
-	--help|?    Prints the help and exits
-	--man    Prints the manual and exits
+	-rep enumLinks|matrix|drawLines    Type of visual representation (default: matrix)
+	-format text|latex    Format of the output (default: latex)
+	-its FILENAME Input target-to-source links file
+	-range BEGIN-END    Input Alignment Set range
+	-alignMode as-is|null-align|no-null-align    Alignment mode
+	-mark STRING    How a link is marked in the matrix representation
+	-maxRows INTEGER Maximum number of rows allowed in the matrix
+	-maxCols INTEGER Maximum number of columns allowed in the matrix
+	-help|?    Prints the help and exits
+	-man    Prints the manual and exits
 
 =head1 ARGUMENTS
 
 =over 8
 
-=item B<--i_st,--i_sourceToTarget FILENAME>
+=item B<--ist,--i_st,--i_sourceToTarget FILENAME>
 
 Input source-to-target (i.e. links) file name (or directory, in case of BLINKER format)
 
-=item B<--i_s,--i_source FILENAME>
+=item B<--is,--i_s,--i_source FILENAME>
 
 Input source (words) file name. Not applicable in GIZA Format.
 
-=item B<--i_t,--i_target FILENAME>
+=item B<--it,--i_t,--i_target FILENAME>
 
 Input target (words) file name. Not applicable in GIZA Format.
 
-=item B<--i_format BLINKER|GIZA|NAACL>
+=item B<--if,--i_format BLINKER|GIZA|NAACL>
 
-Input Alignment Set format (required if different from default, NAACL).
+Input Alignment Set format (required if different from default, TALP).
+
+=head1 OPTIONS
 
 =item B<--rep, --representation enumLinks|matrix|drawLines>
 
@@ -132,9 +136,7 @@ Type of visual represention (cf documentation for the AlignmentSet.pm module). N
 Format of the output. If representation=matrix, format must be 'latex'. In this case, the latex output is best seen with a ps viewer
 (instead of a dvi viewer).
 
-=head1 OPTIONS
-
-=item B<--i_ts,--i_targetToSource FILENAME>
+=item B<--its,--i_ts,--i_targetToSource FILENAME>
 
 Input target-to-source (i.e. links) file name (or directory, in case of BLINKER format)
 
@@ -177,15 +179,15 @@ Displays the aligned sentence pairs as a links enumeration or matrix. The comman
 
 Visualising as an enumeration of links, in text format, the first 10 sentence pairs of a GIZA file:
 
-perl visualise_alSet.pl --i_st test-giza.spa2eng.giza --i_format=GIZA --range=-10 --rep enumLinks -format text
+perl visualise_alSet-version.pl -ist test-giza.spa2eng.giza -if=GIZA -range=-10 -rep enumLinks -format text
 
 Visualising as a matrix the first 10 sentence pairs in a NAACL file, with a personalized mark (black squares), and redirecting the ouput to a .tex file:
 
-perl visualise_alSet.pl --i_st test-giza.spa2eng.naacl --i_s test.spa.naacl --i_t test.eng.naacl --rep matrix --format latex --range -10 --mark '$\blacksquare$' > matrix.tex
+perl visualise_alSet-version.pl -ist test-giza.spa2eng.naacl -is test.spa.naacl -it test.eng.naacl -rep matrix -format latex -range -10 -mark '$\blacksquare$' > matrix.tex
 
 =head1 AUTHOR
 
-Patrik Lambert <lambert@talp.upc.es>
+Patrik Lambert <lambert@gps.tsc.upc.edu>
 
 =head1 COPYRIGHT AND LICENSE
 

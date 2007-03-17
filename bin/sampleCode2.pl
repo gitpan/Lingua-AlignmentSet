@@ -4,7 +4,7 @@ BEGIN {
     $ENV{ALDIR}="data";
 }
 
-use Lingua::AlignmentSet;
+use Lingua::AlignmentSet 1.1;
 #################################################################################
 # remove ¿?¡!. signs from the Blinker reference corpus and save it as Naacl file:
 #################################################################################

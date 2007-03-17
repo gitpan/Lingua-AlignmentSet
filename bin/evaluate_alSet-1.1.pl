@@ -4,7 +4,7 @@
 # Author:  Patrik Lambert (lambert@talp.ucp.es)
 # Description: Evaluates a submitted Alignment Set against an answer Alignment Set
 #
-#-----------------------------------------------------------------------
+# -----------------------------------------------------------------------
 #
 #  Copyright 2004 by Patrik Lambert
 #
@@ -22,11 +22,10 @@
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 ########################################################################
-
 use strict;
 use Getopt::Long;
 use Pod::Usage;
-use Lingua::AlignmentSet;
+use Lingua::AlignmentSet 1.1;
 #Debug:
 use Dumpvalue;
 my $dumper = new Dumpvalue; 
@@ -39,14 +38,14 @@ my $TINY = 1 - $INFINITY / ($INFINITY + 1);
 #PARSING COMMAND-LINE ARGUMENTS
 my %opts=();
 # optional arguments defaults
-$opts{sub_format}="NAACL";
-$opts{ans_format}="NAACL";
+$opts{sub_format}="TALP";
+$opts{ans_format}="TALP";
 $opts{sub_range}="1-";
 $opts{ans_range}="1-";
-$opts{alignMode}="as-is";
+$opts{alignMode}="no-null-align";
 $opts{wheighted}=0;
 # parse command line
-GetOptions(\%opts,'man','help|?','weighted|w!','format=s','submission|sub=s','answer|ans=s','sub_format=s','sub_range=s','ans_format=s','ans_range=s','alignMode=s') or pod2usage(0);
+GetOptions(\%opts,'man','help|?','weighted|w!','submission|sub=s@','answer|ans=s','sub_format|subf=s','sub_range=s','ans_format|ansf=s','ans_range=s','alignMode=s','title=s') or pod2usage(0);
 # check no required arg missing
 if ($opts{man}){
     pod2usage(-verbose=>2);
@@ -57,70 +56,72 @@ if ($opts{man}){
 }
 #END PARSING COMMAND-LINE ARGUMENTS
 
-#load submission Alignment Set
-my $submission = Lingua::AlignmentSet->new([[$opts{submission},$opts{sub_format},$opts{sub_range}]]);
+my @evaluation = ();
 #load answer Alignment Set
 my $answer = Lingua::AlignmentSet->new([[$opts{answer},$opts{ans_format},$opts{ans_range}]]);
-#call library function
-my @evaluation = ();
-push @evaluation, [$submission->evaluate($answer,$opts{alignMode},$opts{weighted})," "];
-Lingua::AlignmentEval::compare(\@evaluation,"Alignment evaluation",\*STDOUT,"text");
 
-#my $evaluation = $submission->evaluate($answer,$opts{alignMode},$opts{weighted});
-#Lingua::AlignmentEval::display($evaluation,\*STDOUT,"text");
+#load submission Alignment Set(s)
+foreach my $string (@{$opts{submission}}){
+    my ($subFile,$description)=split /,/,$string;
+    my $submission = Lingua::AlignmentSet->new([[$subFile,$opts{sub_format},$opts{sub_range}]]);
+    #call library function
+    push @evaluation, [$submission->evaluate($answer,$opts{alignMode},$opts{weighted}),$description];
+}
+Lingua::AlignmentEval::compare(\@evaluation,$opts{title},\*STDOUT,"text");
 
 
 __END__
 
 =head1 NAME
 
-evaluate_alSet.pl - Evaluates a submitted Alignment Set against an answer Alignment Set
+evaluate_alSet-version.pl - Evaluates submitted Alignment Set(s) against an answer Alignment Set
 
 =head1 SYNOPSIS
 
-perl evaluate_alSet.pl [options] required_arguments
+perl evaluate_alSet-version.pl [options] required_arguments
 
 Required arguments:
 
-	--sub, --submission FILENAME    Submission source-to-target links file
-	--sub_format BLINKER|GIZA|NAACL    Submission file format (required if not NAACL)
-	--ans, --answer FILENAME    Answer source-to-target links file
-	--ans_format BLINKER|GIZA|NAACL    Answer file format (required if not NAACL)
+	-sub FILENAME,'DESCRIPTION'    As many as submission source-to-target links files.
+	-subf BLINKER|GIZA|NAACL    Submission file(s) format (required if not TALP).
+	-ans FILENAME    Answer source-to-target links file
+	-ansf BLINKER|GIZA|NAACL    Answer file format (required if not TALP)
 
 Options:
 
-	--sub_range BEGIN-END    Submission Alignment Set range
-	--ans_range BEGIN-END    Answer Alignment Set range
-	--alignMode as-is|null-align|no-null-align    Alignment mode
-	-w,--wheighted    Activates the weighting of the links
-	--help|?    Prints the help and exits
-	--man    Prints the manual and exits
+	-sub_range BEGIN-END    Submission Alignment Set range
+	-ans_range BEGIN-END    Answer Alignment Set range
+	-alignMode as-is|null-align|no-null-align Alignment mode. Default: no-null-align
+	-w    Activates the weighting of the links
+	-title Title of the experiment series
+	-help|?    Prints the help and exits
+	-man    Prints the manual and exits
 
 =head1 ARGUMENTS
 
 =over 8
 
-=item B<--sub,--submission FILENAME>
+=item B<--sub,--submission FILENAME,'DESCRIPTION'>
 
-Submission source-to-target (i.e. links) file name (or directory, in case of BLINKER format)
+One entry for each submission source-to-target (i.e. links) file name (or directory, in case of BLINKER format). Optionally a description can be added, between '' if it contains white spaces.
 
-=item B<--sub_format BLINKER|GIZA|NAACL>
+=item B<--subf,--sub_format BLINKER|GIZA|NAACL>
 
-Submission Alignment Set format (required if different from default, NAACL).
+Submission Alignment Set format (required if different from default, TALP). The same format is required for all input files.
 
 =item B<--ans,--answer FILENAME>
 
 Answer source-to-target (i.e. links) file name (or directory, in case of BLINKER format)
 
-=item B<--ans_format BLINKER|GIZA|NAACL>
+=item B<--ansf,--ans_format BLINKER|GIZA|NAACL>
 
-Answer Alignment Set format (required if different from default, NAACL)
+Answer Alignment Set format (required if different from default, TALP)
 
 =head1 OPTIONS
 
 =item B<--sub_range BEGIN-END>
 
-Range of the submission source-to-target file (BEGIN and END are the sentence pair numbers)
+Range of the submission source-to-target file (BEGIN and END are the sentence pair numbers). The same range is required for all input files.
 
 =item B<--ans_range BEGIN-END>
 
@@ -136,6 +137,10 @@ Use "as-is" only if you are sure answer and submission files are in the same ali
 
 Weights the links according to the number of links of each word in the sentence pair.
 
+=item B<--title>
+
+Give a title to the table where results are compared
+
 =item B<--help, --?>
 
 Prints a help message and exits.
@@ -146,30 +151,30 @@ Prints a help message and exits.
 
 =head1 DESCRIPTION
 
-Evaluates a submitted Alignment Set against an answer Alignment Set. 
-The command-line utility has been made for convenience. For full details, see the documentation of the AlignmentSet.pm module.
-If you want to compare alignment results in a table, the library function has more features so the best is to call it from a perl script.
+Evaluates one or various submitted Alignment Set(s) against an answer Alignment Set, and compare the results in a table.
 
 =head1 EXAMPLES
 
-perl evaluate_alSet.pl --sub test-giza.spa2eng.giza --sub_format=GIZA --ans test-answer.spa2eng.naacl
+perl evaluate_alSet-version.pl -sub test-giza.spa2eng.giza,'Spanish to English' -sub test-giza.eng2spa.giza,'English to Spanish' -title'Alignment Evaluation' -subf=GIZA -ans test-answer.spa2eng.naacl
 
 Gives the following output:
 
-    Alignment evaluation   
+    Alignment Evaluation   
 ----------------------------------
  Experiment                Ps	  Rs	  Fs	  Pp	  Rp	  Fp	 AER  
 
-                         93.95	67.51	78.57	93.95	67.51	78.57	21.43
+Spanish to English       93.95  67.51   78.57   93.95   67.51   78.57   21.43
+
+English to Spanish       81.57  74.14   77.68   86.31   65.60   74.54   20.07
 
 =head1 AUTHOR
 
-Patrik Lambert <lambert@talp.upc.es>
+Patrik Lambert <lambert@gps.tsc.upc.edu>
 Some code from Rada Mihalcea's wa_eval_align.pl (http:://www.cs.unt.edu/rada/wpt/code/) has been integrated in the library function.
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright 2004 by Patrick Lambert
+Copyright 2004-2005 by Patrick Lambert
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License (version 2 or any later version).
 

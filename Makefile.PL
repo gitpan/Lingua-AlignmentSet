@@ -5,8 +5,8 @@ use ExtUtils::MakeMaker;
 WriteMakefile(
     'NAME'		=> 'Lingua::AlignmentSet',
     'VERSION_FROM'	=> 'AlignmentSet.pm', # finds $VERSION
-    'PREREQ_PM'		=> {Pod::Usage =>1.14, Algorithm::MinMax => 0.01}, # e.g., Module::Name => 1.1
+    'PREREQ_PM'		=> {Pod::Usage =>1.14}, # e.g., Module::Name => 1.1
     ($] >= 5.005 ?    ## Add these new keywords supported since 5.005
       (ABSTRACT_FROM => 'AlignmentSet.pm', # retrieve abstract from module
-       AUTHOR     => 'Patrik Lambert <lambert@lsi.upc.es>') : ()),
+       AUTHOR     => 'Patrik Lambert <lambert@gps.tsc.upc.edu>') : ()),
 );

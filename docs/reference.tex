@@ -1,16 +1,17 @@
 \documentclass[twoside,10pt]{article}
-\input{/usr/usuaris/doctorat/lambert/docs/templates/latex/macros}
-\newcommand \formats{\{'BLINKER','GIZA', 'NAACL'\}}
-\newcommand \defaultFormat{'NAACL'}
+\input{/home/lambert/docs/templates/latex/packs}
+\input{/home/lambert/docs/templates/latex/macros}
+\newcommand \formats{\{'BLINKER','GIZA', 'NAACL','TALP'\}}
+\newcommand \defaultFormat{'TALP'}
 \newcommand \alignModes{\{'as-is','null-align','no-null-align'\}}
 \begin{document}
 
 \title{Documentation for the Alignment Set Toolkit}
-\author{Patrik Lambert\,\,\, (lambert@lsi.upc.es)}
+\author{Patrik Lambert\,\,\, (lambert@gps.tsc.upc.es)}
 %\date{}  % if you let it commented today's date is used
 \maketitle
 \begin{center}
-Version 1.0
+Version 1.1
 \end{center}
 \tableofcontents
 %\newpage
@@ -40,6 +41,28 @@ In this toolkit an Alignment Set is a perl object, whose reference is passed to 
 \subsection{Description of storage formats}\label{desc:formats}
 In this section we describe the most widely used formats to store Alignment Sets in files.
 \bdesc
+\item[TALP]
+This is the default format in version 1.1 (but not in version 1.0). The Alignment Set is stored in three separate files: one for the source sentences, one for the  target sentences and one for the alignments. In each file, each line corresponds to one sentence pair and the sentence pair order is the same in all files. In this way source sentence, target sentence and links of the same sentence pair share the same line number. Source and target sentences are stored as plain text, and links as a sequence of position numbers (starting from 1, as 0 is reserved for NULL word) separated by ``s'' or a dash (sure links), or a p (possible links). Example:
+\bdesc
+\item[source words file]
+\begin{verbatim}
+
+I can not say anything at this stage .
+We will consider the matter .
+\end{verbatim}
+\item[target words file]
+\begin{verbatim}
+
+Así , de momento , no puedo pronunciarme .
+Deberemos examinar la cuestión .
+\end{verbatim}
+\item[source-target alignment file]
+\begin{verbatim}
+
+1-7 2-7 3-6 4-8 5-8 7-1 8-4 9-9
+1-2 2-2 3-2 4-3 5-4 6-5
+\end{verbatim}
+\edesc
 \item[GIZA]
 The format used by the Giza toolkit \cite{giza,giza++}. All information is contained in only one file, but since the alignment produced by the toolkit is not symmetric, up to two files can be specified: source-to-target alignment file and target-to-source alignment file. The alignment of each sentence pair in Giza occupies three lines of the file:
 
@@ -208,20 +231,20 @@ NULL& . & . & . & . & . & . & .  \\
 \edesc
 \subsection{Evaluation}\label{desc:evaluation}
 A consensus on word alignment evaluation methods has started to appear. These methods are described in \cite{mihalcea03}. Submitted alignments are compared to a manually aligned reference corpus (gold standard) and scored with respect to precision, recall, F-measure and Alignment Error Rate (AER). An inherent problem of the evaluation is the ambiguity of the manual alignment task. The annotation criteria depend on each annotator. Therefore, \cite{och_ney03} introduced a reference corpus with explicit ambiguous (called P or Possible) links and unambiguous (called S or Sure) links.
-Given an alignment $\mathcal{\submit}$, and a gold standard alignment $\mathcal{\answer}$, we can define sets $\mathcal{\submit_S}$, $\mathcal{\submit_P}$ and $\mathcal{\answer_S}$, $\mathcal{\answer_P}$, corresponding to the sets of Sure and Possible links of each alignment. The set of Possible links is also the union of 
-S and P links, or equivalently  $\mathcal{\submit_S}\subseteq\mathcal{\submit_P}$ and  $\mathcal{\answer_S}\subseteq\mathcal{\answer_P}$. The following measures are defined (where $T$ is the alignment type, and can be set to either S or P):
+Given an alignment $\submit{}$, and a gold standard alignment $\answer{}$, we can define sets $\submit{S}$, $\submit{P}$ and $\answer{S}$, $\answer{P}$, corresponding to the sets of Sure and Possible links of each alignment. 
+The set of Possible links is also the union of S and P links, or equivalently  $\submit{S}\subseteq\submit{P}$ and  $\answer{S}\subseteq\answer{P}$. The following measures are defined (where $T$ is the alignment type, and can be set to either S or P):
 
 \vspace{-2mm}
 \begin{equation*}
-P_T=\frac{\left|\submit_T\cap\answer_T\right|}{\left|\submit_T\right|},
+P_T=\frac{\left|\submit{T}\cap\answer{T}\right|}{\left|\submit{T}\right|},
 \hspace{2mm}
-R_T=\frac{\left|\submit_T\cap\answer_T\right|}{\left|\answer_T\right|},
+R_T=\frac{\left|\submit{T}\cap\answer{T}\right|}{\left|\answer{T}\right|},
 \hspace{2mm}
 F_T=\frac{2P_TR_T}{P_T+R_T}
 \end{equation*}
 \vspace{-2mm}
 \begin{equation*}
-AER=1-\frac{\left|\submit_P\cap\answer_S\right|+\left|\submit_P\cap\answer_P\right|}{\left|\submit_P\right|+\left|\answer_S\right|}
+AER=1-\frac{\left|\submit{P}\cap\answer{S}\right|+\left|\submit{P}\cap\answer{P}\right|}{\left|\submit{P}\right|+\left|\answer{S}\right|}
 \end{equation*}
 
 \subsubsection{Unlinked words representation}\label{eval:unlinked}
@@ -239,7 +262,7 @@ w(\mbox{x},\mbox{y})=\frac{1}{2}\left[\frac{1}{num\_links(\mbox{x})}+\frac{1}{nu
 \subsubsection{Implementation}
 The \code{evaluate} function can force the alignments to be both in ``null-align'' or ``no-null-align'' mode. The seven measures of the result set (precision, recall and F-measure for sure alignments and for possible alignments, AER rate) are saved in a class called \code{AlignmentEval}. You can call it to display a single measure set or a table comparing various result sets.
 
- The \code{evaluate} function calculates weighted links if its 'weighted' argument is true. The weights must be calculated with respect to the union of the submitted and reference sets. For the measures involving only Sure alignments ($P_S$ and $R_S$), they are calculated with respect to the union of the Sure sets: $\mathcal{\submit_S}\cup\mathcal{\answer_S}$. For the measures mixing Sure and Possible alignments (AER, $P_P$ and $R_P$), the weights are calculated based on the union of the Possible sets:  $\mathcal{\submit_P}\cup\mathcal{\answer_P}=\mathcal{\submit}\cup\mathcal{\answer}$.
+ The \code{evaluate} function calculates weighted links if its 'weighted' argument is true. The weights must be calculated with respect to the union of the submitted and reference sets. For the measures involving only Sure alignments ($P_S$ and $R_S$), they are calculated with respect to the union of the Sure sets: $\submit{S}\cup\answer{S}$. For the measures mixing Sure and Possible alignments (AER, $P_P$ and $R_P$), the weights are calculated based on the union of the Possible sets:  $\submit{P}\cup\answer{P}=\submit{}\cup\answer{}$.
 \subsection{Symmetrisation}
 This section concerns Alignment Sets containing asymmetric source-to-target and target-to-source alignments.
 Combining the source-target and target-source information of the alignments, we can obtain a high precision with low recall alignment (taking the intersection), a low precision with high recall alignment (taking the union), or intermediate combinations. Such intermediate symmetrisation algorithm have been proposed by \cite{och_ney03,koehn03,lambert04lrec}. 
@@ -251,6 +274,8 @@ The algorithm combines two single-word based alignments to produce a symmetric, 
 %%%
 \newpage
 \section{Reference}
+\subsection{Command-line Tools}
+\textbf{Important:} a series of command-line tools are available, with internal documentation (which is displayed adding the option -man). These tools encapsulate calls to the perl library and do the same as the subroutines described here, without the need to read the following reference and to write perl code.
 \subsection{Alignment Set definition}\label{ref:alignmentSet}
 \bitem
 \item \code{new} function \addcontentsline{toc}{subsubsection}{\code{new} function}
@@ -290,7 +315,7 @@ The parameters required by each format for the \code{location} hash are:
 \code{``sourceToTarget''} & $\Rightarrow$ source-to-target file path, \\
 \code{``targetToSource''} & $\Rightarrow$ target-to-source file path (optional) )
 \end{tabular} 
-\item[NAACL:]
+\item[NAACL and TALP:]
 \begin{tabular}[t]{ll}
 \code{location}=( & \\
 \code{``source''} & $\Rightarrow$ source sentences file path (optional for some functions), \\
@@ -356,8 +381,6 @@ use this function before calling subroutines that require the sentence files, li
 \subsection{Conversion between formats}\label{ref:conversion}
 \bitem
 \item \code{chFormat} method  \addcontentsline{toc}{subsubsection}{\code{chFormat} method}:
-
-Implemented so far: conversion from any format to NAACL or BLINKER format.
 
 Converts an Alignment Set to the specified format: creates, at the specified location, the necessary file(s) and directory and stores there the Alignment Set in the specified format. It cannot delete the old format files. It starts counting the new Alignment Set sentence pairs from 1, even if in the original Alignment Set they start from a different number.
 
@@ -502,8 +525,26 @@ The \code{Alignment.pm} module contains such functions:
    \bitem
    \item \code{forceGroupConsistency}: prohibits situations of the type: if linked(e,f) and linked(e',f) and linked(e',f') but not linked(e,f'). In this case the function links e and f'.
    \item \code{swapSourceTarget}: swaps source and target in the alignments (transforms a link (6 3) in (3 6)).
-   \item \code{eliminateWord(wordRegExp,side)}: eliminates a word (defined as a regular expression) from a side of the corpus (``source'' or ``target'') and updates the links accordingly. This is a contribution from A. de Gispert and J. M. Crego.
+   \item \code{regexpReplace}: Substitutes, in a side of the corpus, a string (defined by a regular expression) by another and updates the links accordingly. There are 3 arguments: the regular expressions (pattern and replacement) and the side (source or target) (see the man examples). Notes:
+     \bitem
+     \item In case of deleting various words, all added words are linked to all positions to which deleted words were linked. \code{$\$al->{sourceLinks}$} information can be lost for replaced words.
+     \item The regexp is applied to the side of the corpus, and the smallest set of additions and deletions necessary to turn the original word sequence into the modified one is computed using algorithm::diff. In practice, this set is not always minimal, and in these cases various words are replaced by various so links may be changed. To avoid this problem use \code{replaceWords} subroutine.
+     \item Is more eficient in "source" side than in "target" side.
+     \eitem
+   \item \code{replaceWords}: Substitutes, in a side of the corpus, a string (of words separated by a white space) by another and updates the links accordingly. There are 3 arguments: the string of words to be replaced, the string of replacement words and the side (source or target) (see the man examples). Notes:
+     \bitem
+     \item In case of deleting various words, all added words are linked to all positions to which deleted words were linked. \code{$\$al->{sourceLinks}$} information can be lost for replaced words.
+     \item Is more eficient in "source" side than in "target" side.
+     \eitem
+
+     \item \code{manyToMany2joined}: introduces underscore between links of many-to-many groups in source to target alignment. Warning: this subroutine only changes words files, not the links file.
+
+     \item \code{joined2ManyToMany}: recreates links of words linked by underscore and removes underscores
+
+     \item \code{getAlClusters}: gets the alignment as clusters of positions aligned together.
+
    \eitem
+
 \item[]Subroutines which combine source-target and target-source alignments:
 
    \bitem
@@ -552,7 +593,7 @@ my $union=$s2e->processAlignment("Lingua::Alignment::getUnion","union.naacl","NA
     #define output location:
   $newLocation = {"target"=>"data/english-without.naacl",
                   "sourceToTarget"=>"data/spanish-english-interm.naacl"};
-  my $refToArray = ["Lingua::Alignment::eliminateWord",'\.|\?|!',"target"];
+  my $refToArray = ["Lingua::Alignment::replaceWords",'\.|\?|!','',"target"];
   my $output = $answer->processAlignment($refToArray,$newLocation);
 
 #2 Remove now from source side:
@@ -562,9 +603,20 @@ my $union=$s2e->processAlignment("Lingua::Alignment::getUnion","union.naacl","NA
     #define output location:
   $newLocation = {"source"=>"data/spanish-without.naacl",
                   "sourceToTarget"=>"data/spanish-english-without.naacl"};
-  $refToArray = ["Lingua::Alignment::eliminateWord",'\.|\?|!',"source"];
+  $refToArray = ["Lingua::Alignment::replaceWords",'\.|\?|!','',"source"];
   $output = $output->processAlignment($refToArray,$newLocation);
 \end{verbatim}
+\item \code{orderAsBilCorpus} method  \addcontentsline{toc}{subsubsection}{\code{orderAsBilCorpus} method}
+Place sentence pairs of a secondary corpus at the head of the Alignment Set, in the
+       same order.
+See more details with the command-line tool (\code{perl orderAlSetAsBilCorpus.pl -man}).
+\item \code{adaptToBilCorpus} method  \addcontentsline{toc}{subsubsection}{\code{adaptToBilCorpus} method}
+Looks if the Alignment Set sentence pairs are in another bilingual corpus, and for
+       each sentence pair which is not in the corpus, it searches the corpus sentence pair with best longuest common
+       subsequence (LCS) ratio. Finally, it detects the edits (word insertions, deletions, and substitutions) neces-
+       sary to pass from the Alignment Set sentences to the corpus sentences with best LCS ratio, prints the edit
+       list and transmits these edits in the output links file.
+See more details with the command-line tool (\code{perl adaptAlSetToBilCorpus.pl -man}).
 \item \code{symmetrize} method  \addcontentsline{toc}{subsubsection}{\code{symmetrize} method}
 
 \begin{tabular}{|c|p{5.5cm}|p{3cm}|p{2cm}|}
@@ -619,13 +671,12 @@ If you need a tool which is not present yet in this library, why not considering
 \item Implement the \code{drawLines} way of visualising an alignment (see section \ref{desc:visualise}), which is the most intuitive.
 \item Implement other symmetrisation methods.
 \item Add other types of evaluation measures, which wouldn't have the limitations of the AER (see \cite{lambert04lrec}).
-\item Instead of reading the files sentence per sentence, read them memory chunk per memory chunk
 \eitem
 \section{Acknowledgements}
-The author want to thank Adrià de Gispert for testing the initial versions of the library and for his helpful comments. This library includes some code from Rada Mihalcea, Josep Maria Crego and Adrià de Gispert.
+The author want to thank Adrià de Gispert for testing the initial versions of the library and for his helpful comments. This library includes some code from Rada Mihalcea.
 This work has been (partially) granted by the Spanish Government under grant TIC2002-04447-C02.
-\bibliographystyle{/usr/usuaris/doctorat/lambert/docs/templates/latex/acl}
-\bibliography{/usr/usuaris/doctorat/lambert/docs/templates/latex/smt}
+\bibliographystyle{/home/lambert/docs/templates/latex/acl}
+\bibliography{/home/lambert/docs/templates/latex/smt}
 
 \end{document}
 

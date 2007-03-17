@@ -1,12 +1,12 @@
 #! /usr/local/bin/perl
 
 ########################################################################
-# Author:  Patrik Lambert (lambert@talp.ucp.es)
-# Description: converts an alignment set to NAACL or BLINKER format
+# Author:  Patrik Lambert (lambert@gps.tsc.upc.edu)
+# Description: cd manual (-man option)
 #
 #-----------------------------------------------------------------------
 #
-#  Copyright 2004 by Patrik Lambert
+#  Copyright 2005 by Patrik Lambert
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -26,7 +26,7 @@
 use strict;
 use Getopt::Long;
 use Pod::Usage;
-use Lingua::AlignmentSet;
+use Lingua::AlignmentSet 1.1;
 #Debug:
 use Dumpvalue;
 my $dumper = new Dumpvalue; 
@@ -39,18 +39,19 @@ my $TINY = 1 - $INFINITY / ($INFINITY + 1);
 #PARSING COMMAND-LINE ARGUMENTS
 my %opts=();
 # optional arguments defaults
-$opts{i_format}="NAACL";
-$opts{o_format}="NAACL";
+$opts{i_format}="TALP";
+$opts{o_format}="TALP";
 $opts{range}="1-";
 $opts{alignMode}="as-is";
+$opts{verbose}=0;
 # parse command line
-GetOptions(\%opts,'man','help|?','i_sourceToTarget|i_st=s','i_targetToSource|i_ts=s','i_source|i_s=s','i_target|i_t=s','i_format=s','o_sourceToTarget|o_st=s','o_targetToSource|o_ts=s','o_source|o_s=s','o_target|o_t=s','o_format=s','range=s','alignMode=s') or pod2usage(0);
+GetOptions(\%opts,'man','help|?','verbose|v=i','i_sourceToTarget|i_st|ist=s','i_targetToSource|i_ts|its=s','i_source|i_s|is=s','i_target|i_t|it=s','i_format|if=s','o_sourceToTarget|o_st|ost=s','o_targetToSource|o_ts|ots=s','o_source|o_s|os=s','o_target|o_t|ot=s','o_format|of=s','range=s','alignMode=s','corpsrc|cs=s','corptrg|ct=s') or pod2usage(0);
 # check no required arg missing
 if ($opts{man}){
     pod2usage(-verbose=>2);
 }elsif ($opts{"help"}){
     pod2usage(0);
-}elsif( !(exists($opts{"i_sourceToTarget"}) && exists($opts{"o_sourceToTarget"})) ){   #required arguments
+}elsif( !(exists($opts{"i_sourceToTarget"}) && exists($opts{"o_sourceToTarget"}) && exists($opts{"corpsrc"}) && exists($opts{"corptrg"})) ){   #required arguments
     pod2usage(-msg=>"Required arguments missing",-verbose=>0);
 }
 #END PARSING COMMAND-LINE ARGUMENTS
@@ -78,87 +79,83 @@ if (exists($opts{"o_targetToSource"})){
 	$location->{"targetToSource"}=$opts{"o_targetToSource"};	
 }
 #call library function
-$input->chFormat($location,$opts{o_format},$opts{alignMode});
-
-
+$input->orderAsBilCorpus($location,$opts{o_format},$opts{alignMode},$opts{corpsrc},$opts{corptrg},$opts{verbose});
 
 __END__
 
 =head1 NAME
 
-chFormat_alSet.pl - converts an Alignment Set to NAACL or BLINKER format
+orderAlSetAsBilCorpus.pl - Place sentence pairs of a secondary corpus at the head of the Alignment Set, in the same order.
 
 =head1 SYNOPSIS
 
-perl chFormat_alSet.pl [options] required_arguments
+perl orderAlSetAsBilCorpus.pl [options] required_arguments
+
+See description in the manual (-man option).
 
 Required arguments:
 
-	--i_st, --i_sourceToTarget FILENAME    Input source-to-target links file
-	--i_format BLINKER|GIZA|NAACL    Input file(s) format (required if not NAACL)
-	--o_st, --o_sourceToTarget FILENAME    Output source-to-target links file
-	--o_format BLINKER|GIZA|NAACL    Output file(s) format (required if not NAACL)
+	-ist FILENAME    Input source-to-target links file
+	-if BLINKER|GIZA|NAACL    Input file(s) format (required if not TALP)
+	-cs FILENAME    New corpus source text file
+        -ct FILENAME    New corpus target text file
+	-ost FILENAME    Output source-to-target links file
+	-of BLINKER|GIZA|NAACL    Output file(s) format (required if not TALP)
+
 
 Options:
 
-	--i_s, --i_source FILENAME    Input source words file
-	--i_t, --i_target FILENAME    Input target words file
-	--i_ts, --i_targetToSource FILENAME Input target-to-source links file
-	--o_s, --o_source FILENAME    Output source words file
-	--o_t, --o_target FILENAME    Output target words file
-	--o_ts, --o_targetToSource FILENAME Output target-to-source links file
-	--range BEGIN-END    Input Alignment Set range
-	--alignMode as-is|null-align|no-null-align    Alignment mode
-	--help|?    Prints the help and exits
-	--man    Prints the manual and exits
+	-is FILENAME    Input source words file
+	-it FILENAME    Input target words file
+	-its FILENAME Input target-to-source links file
+	-os FILENAME    Output source words file
+	-ot FILENAME    Output target words file
+	-ots FILENAME Output target-to-source links file
+	-range BEGIN-END    Input Alignment Set range
+	-alignMode as-is|null-align|no-null-align    Alignment mode
+	-help|?    Prints the help and exits
+	-man    Prints the manual and exits
+        -v INT    verbose mode
 
 =head1 ARGUMENTS
 
 =over 8
 
-=item B<--i_st,--i_sourceToTarget FILENAME>
+=item B<--ist,--i_st,--i_sourceToTarget FILENAME>
 
 Input source-to-target (i.e. links) file name (or directory, in case of BLINKER format)
 
-=item B<--i_format BLINKER|GIZA|NAACL>
+=item B<--if,--i_format BLINKER|GIZA|NAACL>
 
-Input Alignment Set format (required if different from default, NAACL).
+Input Alignment Set format (required if different from default, TALP).
 
-=item B<--o_st,--o_sourceToTarget FILENAME>
+=item B<--cs,--corpsrc FILENAME>
+
+New corpus source text file
+
+=item B<--ct,--corptrg FILENAME>
+
+New corpus target text file
+
+=item B<--os,--o_st,--o_sourceToTarget FILENAME>
 
 Output (new format) source-to-target (i.e. links) file name (or directory, in case of BLINKER format)
 
-=item B<--o_format BLINKER|GIZA|NAACL>
+=item B<--of,--o_format BLINKER|GIZA|NAACL>
 
-Output (new) Alignment Set format (required if different from default, NAACL)
+Output (new) Alignment Set format (required if different from default, TALP)
 
 =head1 OPTIONS
 
-=item B<--i_s,--i_source FILENAME>
-
-Input source (words) file name.  Not applicable in GIZA Format.
-
-=item B<--i_t,--i_target FILENAME>
-
-Input target (words) file name. Not applicable in GIZA Format.
-
-=item B<--i_ts,--i_targetToSource FILENAME>
-
-Input target-to-source (i.e. links) file name (or directory, in case of BLINKER format)
-
-=item B<--range BEGIN-END>
-
-Range of the input source-to-target file (BEGIN and END are the sentence pair numbers)
-
-=item B<--o_s,--o_source FILENAME>
+=item B<--os,--o_s,--o_source FILENAME>
 
 Output (new format) source (words) file name. Not applicable in GIZA Format.
 
-=item B<--o_t,--o_target FILENAME>
+=item B<--ot,--o_t,--o_target FILENAME>
 
 Output (new format) target (words) file name. Not applicable in GIZA Format.
 
-=item B<--o_ts,--o_targetToSource FILENAME>
+=item B<--ots,--o_ts,--o_targetToSource FILENAME>
 
 Output (new format) target-to-source (i.e. links) file name (or directory, in case of BLINKER format)
 
@@ -176,27 +173,19 @@ Prints a help message and exits.
 
 =head1 DESCRIPTION
 
-Converts an Alignment Set to the specified format. It creates, at the specified location, the new format file(s), but cannot delete
-the old format files. The command-line utility has been made for convenience. For full details, see the documentation of the Lingua::AlignmentSet.pm module.
+Place sentence pairs of a secondary corpus at the head of the Alignment Set, in the same order.
 
 =head1 EXAMPLES
 
-Converting NAACL files to BLINKER format:
-
-perl chFormat_alSet.pl --i_st test-giza.eng2spa.naacl --i_s test.eng.naacl --i_t test.spa.naacl --o_st test-giza.eng2spa.blinker --o_format BLINKER --o_s test.eng --o_t test.spa
-
-Converting a GIZA file to NAACL format:
-
-perl chFormat_alSet.pl --i_st test-giza.eng2spa.giza --i_format GIZA --o_st test-giza.eng2spa.naacl --o_s test.eng.naacl --o_t test.spa.naacl
-
+perl orderAlSetAsBilCorpus.pl -ist eng2spa.A3.final -if giza -cs align_ref/test.eng.iso -ct align_ref/test.spa.iso -ost eng2spa.reordered -of giza
 
 =head1 AUTHOR
 
-Patrik Lambert <lambert@talp.upc.es>
+Patrik Lambert <lambert@gps.tsc.upc.es>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright 2004 by Patrick Lambert
+Copyright 2005 by Patrick Lambert
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License (version 2 or any later version).
 
